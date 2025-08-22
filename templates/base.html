@@ -85,6 +85,7 @@
         }
     </style>
     {% block extra_head %}{% endblock %}
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body class="flex flex-col min-h-screen bg-background font-sans text-dark">
     <!-- Navigation Bar -->
@@ -94,7 +95,7 @@
                 <!-- Logo and Brand -->
                 <div class="flex items-center space-x-3">
                     <div class="h-10 w-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white">
-                        <i class="fas fa-shield-alt text-xl"></i>
+                        <img src="{{ url_for('static', filename='favicon.ico') }}" alt="RescueMind" class="h-6 w-6">
                     </div>
                     <div>
                         <span class="font-bold text-xl text-primary">RescueMind</span>
