@@ -1,0 +1,528 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Disaster Response - Emergency Chatbot{% endblock %}
+
+{% block extra_head %}
+<style>
+    .chat-container {
+        height: calc(100vh - 400px);
+        min-height: 500px;
+    }
+    
+    .chat-message {
+        max-width: 80%;
+    }
+    
+    .chat-message-user {
+        border-top-right-radius: 0.125rem !important;
+    }
+    
+    .chat-message-bot {
+        border-top-left-radius: 0.125rem !important;
+    }
+    
+    .typing-indicator span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #a8a8a8;
+        margin-right: 3px;
+        animation: typingAnimation 1s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes typingAnimation {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    
+    .quick-actions-btn:hover .quick-actions {
+        display: flex;
+    }
+    
+    .quick-actions {
+        display: none;
+    }
+    
+    .location-pulse {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: rgba(79, 70, 229, 0.5);
+        animation: locationPulse 2s infinite;
+    }
+    
+    @keyframes locationPulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+    }
+    
+    .emergency-pulse {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: rgba(220, 38, 38, 0.5);
+        animation: emergencyPulse 1.5s infinite;
+    }
+    
+    @keyframes emergencyPulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+    }
+    
+    .countdown-timer {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+    
+    .rate-limited-message {
+        background-color: #fffbeb;
+        border: 1px solid #fef3c7;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .rate-limited-message i {
+        color: #f59e0b;
+        margin-right: 0.75rem;
+        font-size: 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block hero %}
+<div class="bg-gradient-to-r from-primary to-purple-800 py-10 px-4">
+    <div class="container mx-auto max-w-4xl">
+        <h1 class="text-3xl md:text-4xl font-bold text-white text-center mb-4">AI Emergency Response Assistant</h1>
+        <p class="text-white text-opacity-90 text-center max-w-2xl mx-auto">Get real-time guidance during disasters. Our AI provides step-by-step instructions, locates nearby shelters, and delivers critical updates to keep you safe.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-4xl">
+    <!-- Chat Interface -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- Status Bar -->
+        <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <div class="h-10 w-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white relative">
+                    <i class="fas fa-robot"></i>
+                    <div class="location-pulse"></div>
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-semibold text-gray-800">RescueMind Assistant</h3>
+                    <div class="flex items-center">
+                        <span class="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                        <span class="text-xs text-gray-500">Online • Ready to help</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="shareLocationBtn" class="px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-md text-sm flex items-center hover:bg-opacity-20 transition-colors">
+                    <i class="fas fa-location-dot mr-2"></i> 
+                    Share Location
+                </button>
+                <div class="relative quick-actions-btn">
+                    <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-ellipsis-vertical text-gray-500"></i>
+                    </button>
+                    <div class="quick-actions absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 flex flex-col">
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                            <i class="fas fa-download mr-2"></i> Download Chat
+                        </a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                            <i class="fas fa-share mr-2"></i> Share Chat
+                        </a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                            <i class="fas fa-trash-alt mr-2"></i> Clear Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Messages Area -->
+        <div id="chatMessages" class="chat-container overflow-y-auto p-4 md:p-6 flex flex-col space-y-4">
+            <!-- Welcome Message -->
+            <div class="chat-message chat-message-bot bg-gray-100 p-4 rounded-lg self-start">
+                <div class="flex items-center mb-2">
+                    <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white mr-2">
+                        <i class="fas fa-robot text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800">RescueMind</p>
+                        <p class="text-xs text-gray-500">Just now</p>
+                    </div>
+                </div>
+                <div class="prose prose-sm">
+                    <p>Hello! I'm your AI Disaster Response Coordinator. I'm here to provide emergency guidance during floods, earthquakes, wildfires, hurricanes, and other disasters.</p>
+                    <p class="mt-2">How can I assist you today?</p>
+                </div>
+            </div>
+            
+            <!-- Suggestions -->
+            <div class="flex flex-wrap gap-2 self-start ml-10">
+                <button class="suggestion-btn bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-sm text-gray-700 transition-colors">
+                    <i class="fas fa-water text-blue-500 mr-1"></i> Help with flooding
+                </button>
+                <button class="suggestion-btn bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-sm text-gray-700 transition-colors">
+                    <i class="fas fa-fire text-orange-500 mr-1"></i> Wildfire evacuation
+                </button>
+                <button class="suggestion-btn bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-sm text-gray-700 transition-colors">
+                    <i class="fas fa-house-chimney-crack text-red-500 mr-1"></i> Earthquake safety
+                </button>
+                <button class="suggestion-btn bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full text-sm text-gray-700 transition-colors">
+                    <i class="fas fa-hurricane text-teal-500 mr-1"></i> Hurricane preparedness
+                </button>
+            </div>
+
+            <!-- Dynamic messages will be added here -->
+        </div>
+        
+        
+        
+        <!-- Input Area -->
+        <div class="border-t border-gray-100 p-4">
+            <div class="flex items-end">
+                <div class="relative flex-grow">
+                    <textarea id="messageInput" rows="2" placeholder="Type your emergency question here..." 
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-primary resize-none transition-all"
+                              style="max-height: 120px; min-height: 50px;"></textarea>
+                    <div class="absolute bottom-2 right-2 flex space-x-1">
+                        <button class="p-1 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-image"></i>
+                        </button>
+                        <button class="p-1 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="sendMessageBtn" class="ml-2 h-10 w-10 bg-primary rounded-full flex items-center justify-center text-white hover:bg-purple-700 transition-colors flex-shrink-0">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            
+            <!-- Emergency Quick Actions -->
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button class="emergency-btn bg-alert text-white px-4 py-1 rounded-md text-sm flex items-center hover:bg-red-700 transition-colors">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> Emergency SOS
+                </button>
+                <button class="share-location-btn bg-info text-white px-4 py-1 rounded-md text-sm flex items-center hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-location-dot mr-2"></i> Share Location
+                </button>
+                <button class="find-shelter-btn bg-secondary text-white px-4 py-1 rounded-md text-sm flex items-center hover:bg-teal-700 transition-colors">
+                    <i class="fas fa-house-chimney mr-2"></i> Find Shelter
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Information Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">About this Assistant</h3>
+                <div class="h-10 w-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-info text-primary"></i>
+                </div>
+            </div>
+            <ul class="space-y-3">
+                <li class="flex items-start">
+                    <div class="mt-0.5 h-5 w-5 bg-success bg-opacity-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-check text-xs text-success"></i>
+                    </div>
+                    <span class="ml-2 text-gray-600 text-sm">Provides verified information from trusted sources only</span>
+                </li>
+                <li class="flex items-start">
+                    <div class="mt-0.5 h-5 w-5 bg-success bg-opacity-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-check text-xs text-success"></i>
+                    </div>
+                    <span class="ml-2 text-gray-600 text-sm">Gives step-by-step emergency instructions in your language</span>
+                </li>
+                <li class="flex items-start">
+                    <div class="mt-0.5 h-5 w-5 bg-success bg-opacity-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-check text-xs text-success"></i>
+                    </div>
+                    <span class="ml-2 text-gray-600 text-sm">Suggests nearest shelters and evacuation routes</span>
+                </li>
+                <li class="flex items-start">
+                    <div class="mt-0.5 h-5 w-5 bg-success bg-opacity-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-check text-xs text-success"></i>
+                    </div>
+                    <span class="ml-2 text-gray-600 text-sm">Provides real-time updates during emergencies</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Emergency Resources</h3>
+                <div class="h-10 w-10 bg-accent bg-opacity-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-hands-helping text-accent"></i>
+                </div>
+            </div>
+            <ul class="space-y-3">
+                <li class="flex items-center">
+                    <i class="fas fa-phone text-alert mr-3 w-5 text-center"></i>
+                    <span class="text-gray-600 text-sm">Emergency: <strong>911</strong></span>
+                </li>
+                <li class="flex items-center">
+                    <i class="fas fa-first-aid text-alert mr-3 w-5 text-center"></i>
+                    <span class="text-gray-600 text-sm">Poison Control: <strong>1-800-222-1222</strong></span>
+                </li>
+                <li class="flex items-center">
+                    <i class="fas fa-hand-holding-medical text-alert mr-3 w-5 text-center"></i>
+                    <span class="text-gray-600 text-sm">Disaster Distress Helpline: <strong>1-800-985-5990</strong></span>
+                </li>
+                <li class="flex items-center">
+                    <i class="fas fa-tty text-alert mr-3 w-5 text-center"></i>
+                    <span class="text-gray-600 text-sm">Text "TalkWithUs" to <strong>66746</strong></span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+        
+        // Rate limiting variables
+        let isRateLimited = false;
+        let rateLimitTimer = null;
+        let countdownInterval = null;
+        
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.scrollHeight > 120) {
+                this.style.height = '120px';
+            }
+        });
+        
+       
+        
+        // Send message function
+        function sendMessage(message) {
+            if (!message.trim() || isRateLimited) return;
+            
+            // Add user message to chat
+            const userMessageHTML = `
+                <div class="chat-message chat-message-user bg-primary text-white p-4 rounded-lg self-end">
+                    <div class="flex items-center justify-end mb-2">
+                        <div>
+                            <p class="font-semibold text-right">You</p>
+                            <p class="text-xs text-white text-opacity-80 text-right">Just now</p>
+                        </div>
+                        <div class="h-8 w-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white ml-2">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                    </div>
+                    <p>${message}</p>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', userMessageHTML);
+            
+            // Clear input
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Show typing indicator
+            const typingIndicatorHTML = `
+                <div id="typingIndicator" class="chat-message chat-message-bot bg-gray-100 p-3 rounded-lg self-start flex items-center">
+                    <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white mr-2">
+                        <i class="fas fa-robot text-sm"></i>
+                    </div>
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', typingIndicatorHTML);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Send message to server
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({message: message})
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove typing indicator
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) typingIndicator.remove();
+                
+                // Check for rate limiting
+                if (data.rate_limited) {
+                    isRateLimited = true;
+                    
+                    // Add a notice about rate limiting
+                    const rateLimitedHTML = `
+                        <div class="chat-message chat-message-bot bg-gray-100 p-4 rounded-lg self-start">
+                            <div class="flex items-center mb-2">
+                                <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white mr-2">
+                                    <i class="fas fa-robot text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">RescueMind</p>
+                                    <p class="text-xs text-gray-500">Just now</p>
+                                </div>
+                            </div>
+                            <div class="prose prose-sm">
+                                ${data.response}
+                            </div>
+                            <div class="rate-limited-message mt-3">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>I'm currently experiencing high demand. I've provided general guidance above, but for personalized assistance, please try again shortly.</span>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.insertAdjacentHTML('beforeend', rateLimitedHTML);
+                    
+                    // Start countdown
+                    startRateLimitCountdown(data.wait_time);
+                } else {
+                    // Regular response
+                    const botMessageHTML = `
+                        <div class="chat-message chat-message-bot bg-gray-100 p-4 rounded-lg self-start">
+                            <div class="flex items-center mb-2">
+                                <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white mr-2">
+                                    <i class="fas fa-robot text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">RescueMind</p>
+                                    <p class="text-xs text-gray-500">Just now</p>
+                                </div>
+                            </div>
+                            <div class="prose prose-sm">
+                                ${data.response}
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.insertAdjacentHTML('beforeend', botMessageHTML);
+                }
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            })
+            .catch(error => {
+                // Remove typing indicator
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) typingIndicator.remove();
+                
+                // Show error message
+                const errorMessageHTML = `
+                    <div class="chat-message chat-message-bot bg-red-50 p-4 rounded-lg self-start">
+                        <div class="flex items-center mb-2">
+                            <div class="h-8 w-8 bg-alert rounded-full flex items-center justify-center text-white mr-2">
+                                <i class="fas fa-exclamation-circle text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">Error</p>
+                                <p class="text-xs text-gray-500">Just now</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">Sorry, I'm having trouble connecting. Please try again.</p>
+                    </div>
+                `;
+                chatMessages.insertAdjacentHTML('beforeend', errorMessageHTML);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                console.error('Error:', error);
+            });
+        }
+        
+        // Send message when button is clicked
+        sendMessageBtn.addEventListener('click', function() {
+            if (!isRateLimited) {
+                sendMessage(messageInput.value);
+            }
+        });
+        
+        // Send message when Enter key is pressed (without Shift)
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey && !isRateLimited) {
+                event.preventDefault();
+                sendMessage(messageInput.value);
+            }
+        });
+        
+        // Handle suggestion buttons
+        suggestionBtns.forEach(button => {
+            button.addEventListener('click', function() {
+                if (!isRateLimited) {
+                    sendMessage(this.textContent.trim());
+                }
+            });
+        });
+        
+        // Handle share location
+        document.getElementById('shareLocationBtn').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const locationMessage = `My current coordinates are: ${position.coords.latitude}, ${position.coords.longitude}`;
+                    sendMessage(locationMessage);
+                }, error => {
+                    const errorMessageHTML = `
+                        <div class="chat-message chat-message-bot bg-red-50 p-4 rounded-lg self-start">
+                            <div class="flex items-center mb-2">
+                                <div class="h-8 w-8 bg-alert rounded-full flex items-center justify-center text-white mr-2">
+                                    <i class="fas fa-exclamation-circle text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Location Error</p>
+                                    <p class="text-xs text-gray-500">Just now</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-700">Could not access your location. Please share your city or address manually.</p>
+                        </div>
+                    `;
+                    chatMessages.insertAdjacentHTML('beforeend', errorMessageHTML);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+            }
+        });
+        
+        // Emergency quick action buttons
+        document.querySelector('.share-location-btn').addEventListener('click', function() {
+            document.getElementById('shareLocationBtn').click();
+        });
+        
+        document.querySelector('.emergency-btn').addEventListener('click', function() {
+            sendMessage("I have an emergency and need immediate assistance!");
+        });
+        
+        document.querySelector('.find-shelter-btn').addEventListener('click', function() {
+            sendMessage("Where is the nearest emergency shelter?");
+        });
+    });
+</script>
+{% endblock %}

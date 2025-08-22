@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Our Team - RescueMind{% endblock %}
+
+{% block hero %}
+<section class="bg-gradient-to-r from-primary to-purple-800 text-white py-16">
+    <div class="container mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Meet Our Team</h1>
+        <p class="text-xl text-white text-opacity-90 max-w-3xl mx-auto">The brilliant minds behind RescueMind working to make disaster response smarter and more efficient.</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="py-12">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800">The RescueMind Team</h2>
+            <p class="mt-4 text-gray-600 max-w-2xl mx-auto">Our dedicated team of AI engineers is building next-generation solutions for disaster response and coordination.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- Team Member - Walid Jlassi -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg">
+                <div class="p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+                            <img src="{{ url_for('static', filename='images/walid.png') }}" alt="Walid Jlassi" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800">Walid Jlassi</h3>
+                        <p class="text-gray-600 mb-2">25 years</p>
+                        <p class="font-medium text-primary mb-4">AI Engineer</p>
+                        <a href="https://www.linkedin.com/in/walid-jlassi" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                            <i class="fab fa-linkedin mr-2"></i> LinkedIn Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team Member - Eya Gassoumi -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg">
+                <div class="p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+                            <img src="{{ url_for('static', filename='images/eya.jpeg') }}" alt="Eya Gassoumi" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800">Eya Gassoumi</h3>
+                        <p class="text-gray-600 mb-2">25 years</p>
+                        <p class="font-medium text-primary mb-4">AI Engineer</p>
+                        <a href="https://www.linkedin.com/in/eya-gassoumi" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                            <i class="fab fa-linkedin mr-2"></i> LinkedIn Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-16 text-center">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Our Mission</h3>
+            <p class="text-gray-600 max-w-3xl mx-auto">
+                At RescueMind, we're leveraging cutting-edge AI technology to revolutionize disaster response coordination. 
+                Our team is dedicated to creating intelligent solutions that help save lives and improve emergency management.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
